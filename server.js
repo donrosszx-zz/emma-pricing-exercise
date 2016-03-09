@@ -88,11 +88,25 @@ io.on('connection', function(socket) {
             var regionSpread = spread(value);
             regionBasedSpread.push({region: prop, most: regionSpread.most , least:regionSpread.least});
         });
-        // console.log(regionBasedSpread);
+
+        // SPREAD BY TYPE
+        var typeBasedGroup = _.groupBy(instances, function(inst) {
+            return inst.type;
+        });
+        // we want the format of typeBasedSpread to look like
+        // [{type: 'type1', most: {}, least {}}, {type: 'type2', most: {}, least {}}, etc]
+        var typeBasedSpread = [];
+        _.each(typeBasedGroup, function (value, prop) {
+            // value is a list of type specific instances to perform the spread on
+            // prop is the type name
+            var typeSpread = spread(value);
+            typeBasedSpread.push({type: prop, most: typeSpread.most , least:typeSpread.least});
+        });
 
         socket.emit('analysis', {
             overallLeast: overallSpread.least,
-            regionSpread: regionBasedSpread
+            regionSpread: regionBasedSpread,
+            typeSpread: typeBasedSpread
         });
     }).catch(function(error) {
         console.log(error);
