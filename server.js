@@ -33,7 +33,7 @@ function getPricingFromAPI(url) {
                         instanceType.sizes.forEach(function(size) {
                             var instSize = size.size;
                             var instPrice = Number(size.valueColumns[0].prices.USD);
-                            var instVCPU = Number(size.vCPU);
+                            var instVCPU = Number(size.vCPU) || 0;
                             flatInstances.push({
                                 region: instRegion,
                                 type: instType,
@@ -60,6 +60,10 @@ var spread = function(instances) {
         most: mostExpensive,
         least: leastExpensive
     };
+};
+
+var tenCheapest = function(instances) {
+    return _.sortBy(instances, 'price').slice(0, 10);
 };
 
 io.on('connection', function(socket) {
@@ -103,10 +107,25 @@ io.on('connection', function(socket) {
             typeBasedSpread.push({type: prop, most: typeSpread.most , least:typeSpread.least});
         });
 
+        // TEN CHEAPEST BY VCPU
+        var vCPUBasedGroup = _.groupBy(instances, function (inst) {
+            return inst.vCPU;
+        });
+        // we want the format of tenCheapestByVCPU to look like
+        // [{vCPU: 'someInt', tenCheapestList: [{}, {}, etc]}];
+        var tenCheapestByVCPU = [];
+        _.each(vCPUBasedGroup, function (value, prop) {
+            // value is a list of vCPU specific instances to perform the tenCheapest on
+            // prop is the vCPU value.  0 is a spot instance since they have no vCPU value
+            var tenCheapestPerThisVCPU = tenCheapest(value);
+            tenCheapestByVCPU.push({vCPU: prop, tenCheapestList: tenCheapestPerThisVCPU});
+        });
+
         socket.emit('analysis', {
             overallLeast: overallSpread.least,
             regionSpread: regionBasedSpread,
-            typeSpread: typeBasedSpread
+            typeSpread: typeBasedSpread,
+            vCPUCheapest: tenCheapestByVCPU
         });
     }).catch(function(error) {
         console.log(error);
