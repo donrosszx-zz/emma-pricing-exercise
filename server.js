@@ -4,17 +4,81 @@ var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 
+var request = require('request');
+var _ = require('underscore');
+var vm = require('vm');
+
 app.use(express.static(__dirname + '/public'));
 
-// app.get('/', function(req, res) {
-//     res.send();
-// });
+function getPricingFromAPI(url) {
+    return new Promise(function(resolve, reject) {
+        var flatInstances = [];
+        request({
+            url: url
+        }, function(error, response, body) {
+            if (error) {
+                reject("Unable to retrieve pricing from API");
+            } else {
+                var jsonpSandbox = vm.createContext({
+                    callback: function(r) {
+                        return r;
+                    }
+                });
+                var myData = vm.runInContext(body, jsonpSandbox);
+                // resolve(myData);
+                myData.config.regions.forEach(function(region) {
+                    var instRegion = region.region;
+                    region.instanceTypes.forEach(function(instanceType) {
+                        var instType = instanceType.type;
+                        instanceType.sizes.forEach(function(size) {
+                            var instSize = size.size;
+                            var instPrice = Number(size.valueColumns[0].prices.USD);
+                            var instVCPU = Number(size.vCPU);
+                            flatInstances.push({
+                                region: instRegion,
+                                type: instType,
+                                size: instSize,
+                                vCPU: instVCPU,
+                                price: instPrice
+                            });
+                        });
+                    });
+                });
+                resolve(flatInstances);
+            }
+        });
+    });
+}
+
+var spread = function(instances) {
+    var leastExpensive = _.sortBy(instances, 'price')[0];
+    var mostExpensive = _.sortBy(instances, function(inst) {
+        return -inst.price;
+    })[0];
+    return {
+        most: mostExpensive,
+        least: leastExpensive
+    };
+};
 
 io.on('connection', function (socket) {
     console.log('user connected via socket.io');
 
-    socket.emit('analysis', {
-        text: "Here's the analysis"
+    var instances = [];
+    getPricingFromAPI("http://a0.awsstatic.com/pricing/1/ec2/linux-od.min.js").then(function (instancesFromAPI) {
+        instances.push.apply(instances, instancesFromAPI);
+        return getPricingFromAPI("http://spot-price.s3.amazonaws.com/spot.js");
+    }).then(function (instancesFromAPI) {
+        instances.push.apply(instances, instancesFromAPI);
+
+        var overallSpread = spread(instances);
+        
+        socket.emit('analysis', {
+            most: overallSpread.most,
+            least: overallSpread.least
+        });
+    }).catch(function (error) {
+        console.log(error);
     });
 });
 
