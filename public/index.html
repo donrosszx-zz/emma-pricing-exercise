@@ -3,35 +3,47 @@
     <head>
         <meta charset="UTF-8">
         <title>Emma Exercise - Price Analysis</title>
+        <link rel="stylesheet" type="text/css" href="./css/bootstrap.min.css">
+        <link rel="stylesheet" type="text/css" href="./css/styles.css">
     </head>
     <body>
-        <h1>Pricing Analysis</h1>
-        <div>
-            <h3 id="overall-heading"></h3>
-            <ul id="overall-cheapest">
-                <!-- overall cheapest goes here -->
-            </ul>
-        </div>
+        <div class="general">
+            <div class="container">
+                <div class="row">
+                    <h1 class="text-center">Instance Pricing Analysis</h1>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 col-md-offset-4 well">
+                        <h3 class="text-center" id="overall-heading"></h3>
+                        <ul class="list-group" id="overall-cheapest">
+                            <!-- overall cheapest goes here -->
+                        </ul>
+                    </div>                
+                </div>
 
-        <div>
-            <h3 id="region-heading"></h3>
-            <ul id="spread-by-region">
-                <!-- pricing spread by region goes here -->
-            </ul>
-        </div>
-
-        <div>
-            <h3 id="type-heading"></h3>
-            <ul id="spread-by-type">
-                <!-- pricing spread by type goes here -->
-            </ul>
-        </div>
-
-        <div>
-            <h3 id="vCPU-heading"></h3>
-            <ul id="vCPU-top-ten">
-                <!-- top ten by vCPU goes here -->
-            </ul>
+                <div class="row">
+                    <div class="col-md-4 well">
+                        <h3 id="vCPU-heading"></h3>
+                        <ul class="list-group" id="vCPU-top-ten">
+                            <!-- top ten by vCPU goes here -->
+                        </ul>
+                    </div>
+                    
+                    <div class="col-md-4 well">
+                        <h3 class="text-center" id="region-heading"></h3>
+                        <ul class="list-group" id="spread-by-region">
+                            <!-- pricing spread by region goes here -->
+                        </ul>
+                    </div>
+                    
+                    <div class="col-md-4 well">
+                        <h3 class="text-center" id="type-heading"></h3>
+                        <ul class="list-group" id="spread-by-type">
+                            <!-- pricing spread by type goes here -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <script src="/js/jquery-2.2.1.min.js"></script>
