@@ -1,6 +1,7 @@
 var socket = io();
 
 socket.on('analysis', function(analysis) {
+    // Cheapest instance overall
     $("h3#overall-heading").html('Cheapest instance overall');
     var $overall = jQuery('#overall-cheapest');
     var $item = jQuery('<li class="list-group-item"></li>');
@@ -9,6 +10,7 @@ socket.on('analysis', function(analysis) {
     $item.append('vCPU: ' + analysis.overallLeast.vCPU);
     $overall.append($item);
 
+    // Price spread by region
     $("h3#region-heading").html('Price spread by region');
     var $regList = jQuery('#spread-by-region');
     $.each(analysis.regionSpread, function(i) {
@@ -23,6 +25,7 @@ socket.on('analysis', function(analysis) {
         $regList.append($li);
     });
 
+    // Price spread by type
     $("h3#type-heading").html('Price spread by type');
     var $typeList = jQuery('#spread-by-type');
     $.each(analysis.typeSpread, function(i) {
@@ -37,6 +40,8 @@ socket.on('analysis', function(analysis) {
         $typeList.append($li);
     });
 
+    // Top 10 cheapest instances per vCPU
+    // Spot instances don't have vCPU so I've set them to 0
     $("h3#vCPU-heading").html('Top ten prices by vCPU (vCPU: 0 are Spot instances)');
     var $vCPUList = jQuery('#vCPU-top-ten');
     $.each(analysis.vCPUCheapest, function(i) {

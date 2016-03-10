@@ -10,6 +10,14 @@ var vm = require('vm');
 
 app.use(express.static(__dirname + '/public'));
 
+/**
+* retrieves data from API call, extracts JSON from JSONP, and
+* flattens JSON into a list of similar instance objects for easy analysis
+* params: {string} url
+* returns:
+* - resolves with an Array of instance objects
+* - rejects with a string message about the error received from the API request
+*/
 function getPricingFromAPI(url) {
     return new Promise(function(resolve, reject) {
         var flatInstances = [];
@@ -19,13 +27,16 @@ function getPricingFromAPI(url) {
             if (error) {
                 reject("Unable to retrieve pricing from API");
             } else {
+                // extracting json from jsonp help retrieved from 
+                // http://stackoverflow.com/questions/9060270/node-http-request-for-restful-apis-that-return-jsonp
                 var jsonpSandbox = vm.createContext({
                     callback: function(r) {
                         return r;
                     }
                 });
                 var myData = vm.runInContext(body, jsonpSandbox);
-                // resolve(myData);
+
+                // loops over lists in the JSON extracting info for flat instance objects
                 myData.config.regions.forEach(function(region) {
                     var instRegion = region.region;
                     region.instanceTypes.forEach(function(instanceType) {
@@ -33,7 +44,7 @@ function getPricingFromAPI(url) {
                         instanceType.sizes.forEach(function(size) {
                             var instSize = size.size;
                             var instPrice = Number(size.valueColumns[0].prices.USD);
-                            var instVCPU = Number(size.vCPU) || 0;
+                            var instVCPU = Number(size.vCPU) || 0; // Spot instances don't have vCPU so I've set them to 0 for easy sorting
                             flatInstances.push({
                                 region: instRegion,
                                 type: instType,
@@ -50,6 +61,12 @@ function getPricingFromAPI(url) {
     });
 }
 
+/**
+* extracts the most and least expensive instance from a list of instances
+* params: {Array} instances - can be entire list of instances or a pre-filtered list
+* returns: 
+* - an object with the most and least expensive instances from the list
+*/
 var spread = function(instances) {
     var leastExpensive = _.sortBy(instances, 'price')[0];
     var mostExpensive = _.sortBy(instances, function(inst) {
@@ -62,6 +79,12 @@ var spread = function(instances) {
     };
 };
 
+/*
+* extracts the ten cheapest instances from an Array of instances
+* params: {Array} instances - can be entire list of instances or a pre-filtered list
+* returns:
+* - an array of ten or less of the cheapest instances from the array
+*/
 var tenCheapest = function(instances) {
     return _.sortBy(instances, 'price').slice(0, 10);
 };
@@ -76,10 +99,10 @@ io.on('connection', function(socket) {
     }).then(function(instancesFromAPI) {
         instances.push.apply(instances, instancesFromAPI);
 
-        // OVERALL CHEAPEST (AND MOST EXPENSIVE)
+        // OVERALL CHEAPEST INSTANCE (AND MOST EXPENSIVE)
         var overallSpread = spread(instances);
 
-        // SPREAD BY REGION
+        // SPREAD BY REGION - group the instances by region and send them to get the spread
         var regionBasedGroup = _.groupBy(instances, function(inst) {
             return inst.region;
         });
@@ -93,7 +116,7 @@ io.on('connection', function(socket) {
             regionBasedSpread.push({region: prop, most: regionSpread.most , least:regionSpread.least});
         });
 
-        // SPREAD BY TYPE
+        // SPREAD BY TYPE - group the instances by type and send them to get the spread
         var typeBasedGroup = _.groupBy(instances, function(inst) {
             return inst.type;
         });
@@ -107,7 +130,7 @@ io.on('connection', function(socket) {
             typeBasedSpread.push({type: prop, most: typeSpread.most , least:typeSpread.least});
         });
 
-        // TEN CHEAPEST BY VCPU
+        // TEN CHEAPEST BY VCPU - group the instances by vCPU and extract the 10 cheapest
         var vCPUBasedGroup = _.groupBy(instances, function (inst) {
             return inst.vCPU;
         });
