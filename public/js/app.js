@@ -43,17 +43,48 @@ socket.on('analysis', function(analysis) {
     // Top 10 cheapest instances per vCPU
     // Spot instances don't have vCPU so I've set them to 0
     $("h3#vCPU-heading").html('Top ten prices by vCPU (vCPU: 0 are Spot instances)');
-    var $vCPUList = jQuery('#vCPU-top-ten');
-    $.each(analysis.vCPUCheapest, function(i) {
-        var $li = jQuery('<li class="list-group-item"></li>');
-        $li.append('<p><strong>vCPU: ' + analysis.vCPUCheapest[i].vCPU + '</strong></p>');
-        var $subListItem = jQuery('<ul></ul>');
-        $.each(analysis.vCPUCheapest[i].tenCheapestList, function (j) {
-            var node = analysis.vCPUCheapest[i].tenCheapestList[j];
-            $subListItem.append('<li><em>' + node.type + '</em> type in the <em>' + node.region + '</em> region</li>');
-            $subListItem.append('Price Per HR: $' + node.price + '<br/>');
-        });
-        $li.append($subListItem);
-        $vCPUList.append($li);
+    $('#dropdown').append('<br/><label>Select vCPU:</label>');
+    $('#dropdown').append('<select class="form-control"><option>Select...</option></select>');
+    for (var i = 0; i < analysis.vCPUCheapest.length; i++) {
+        jQuery('<option/>', {
+            value: analysis.vCPUCheapest[i].vCPU,
+            html: analysis.vCPUCheapest[i].vCPU
+        }).appendTo('#dropdown select');
+    }
+    $('select').change(function() {
+        if ($('select').val() !== 'Select...') {
+            var vCPUToShow = _.findWhere(analysis.vCPUCheapest, {
+                vCPU: $(this).val()
+            });
+            var $vCPUList = jQuery('#vCPU-top-ten');
+            $vCPUList.empty();
+            var $li = jQuery('<li class="list-group-item"></li>');
+            $li.append('<p><strong>vCPU: ' + vCPUToShow.vCPU + '</strong></p>');
+            var $subListItem = jQuery('<ul></ul>');
+            $.each(vCPUToShow.tenCheapestList, function(j) {
+                var node = vCPUToShow.tenCheapestList[j];
+                $subListItem.append('<li><em>' + node.type + '</em> type in the <em>' + node.region + '</em> region</li>');
+                $subListItem.append('Price Per HR: $' + node.price + '<br/>');
+            });
+            $li.append($subListItem);
+            $vCPUList.append($li);
+        } else {
+            $('#vCPU-top-ten').empty();
+        }
+
     });
+
+    // var $vCPUList = jQuery('#vCPU-top-ten');
+    // $.each(analysis.vCPUCheapest, function(i) {
+    //     var $li = jQuery('<li class="list-group-item"></li>');
+    //     $li.append('<p><strong>vCPU: ' + analysis.vCPUCheapest[i].vCPU + '</strong></p>');
+    //     var $subListItem = jQuery('<ul></ul>');
+    //     $.each(analysis.vCPUCheapest[i].tenCheapestList, function (j) {
+    //         var node = analysis.vCPUCheapest[i].tenCheapestList[j];
+    //         $subListItem.append('<li><em>' + node.type + '</em> type in the <em>' + node.region + '</em> region</li>');
+    //         $subListItem.append('Price Per HR: $' + node.price + '<br/>');
+    //     });
+    //     $li.append($subListItem);
+    //     $vCPUList.append($li);
+    // });
 });
